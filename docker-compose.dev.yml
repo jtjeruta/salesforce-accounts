@@ -1,0 +1,27 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - ${FRONTEND_PORT}:${FRONTEND_PORT}
+    volumes:
+      - ./frontend:/app
+    environment:
+      - NODE_ENV=development
+      - PORT=${FRONTEND_PORT}
+
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - ${SERVER_PORT}:${SERVER_PORT}
+    volumes:
+      - ./server:/app
+    environment:
+      - NODE_ENV=development
+      - PORT=${SERVER_PORT}
+      - CONSUMER_KEY=${SALESFORCE_CONSUMER_KEY}
+      - CONSUMER_SECRET=${SALESFORCE_CONSUMER_SECRET}
+      - SERVER_URL=${SERVER_URL}

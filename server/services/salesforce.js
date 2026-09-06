@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const CONSUMER_KEY = process.env.CONSUMER_KEY;
 const CONSUMER_SECRET = process.env.CONSUMER_SECRET;
 const OAUTH_BASE_URL = 'https://login.salesforce.com/services/oauth2';
-const REDIRECT_URI = 'http://localhost:3000/oauth/callback';
+const REDIRECT_URI = `${process.env.SERVER_URL}/oauth/callback`;
 
 module.exports.generateCodeChallenge = () => {
   const codeVerifier = crypto.randomBytes(32).toString('base64url');
@@ -48,4 +48,22 @@ module.exports.getAccessToken = async (code, codeVerifier) => {
   );
 
   return responseData;
+};
+
+module.exports.salesforceClient = (session) => {
+  const { accessToken, instanceUrl } = session.salesForce || {};
+
+  if (!accessToken || !instanceUrl) {
+    const err = new Error('Not authenticated');
+    err.status = 401;
+    throw err;
+  }
+
+  return axios.create({
+    baseURL: `${instanceUrl}/services/data/v62.0`,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+  });
 };

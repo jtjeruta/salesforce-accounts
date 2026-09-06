@@ -42,7 +42,7 @@ router.get('/callback', async (req, res) => {
     req.session.salesForce.id = response.id;
     req.session.salesForce.issuedAt = response.issued_at;
 
-    res.status(200).json(response);
+    res.redirect('/accounts');
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: error.message });
