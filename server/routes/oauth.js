@@ -42,11 +42,31 @@ router.get('/callback', async (req, res) => {
     req.session.salesForce.id = response.id;
     req.session.salesForce.issuedAt = response.issued_at;
 
-    res.redirect('/accounts');
+    res.redirect('/');
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: error.message });
+    res.redirect(`/?error=${encodeURIComponent(error.message)}`);
   }
+});
+
+router.get('/status', (req, res) => {
+  const salesForce = req.session.salesForce || {};
+
+  res.status(200).json({
+    connected: Boolean(salesForce.accessToken && salesForce.instanceUrl),
+    instanceUrl: salesForce.instanceUrl || null,
+  });
+});
+
+router.post('/logout', (req, res) => {
+  req.session.destroy((error) => {
+    if (error) {
+      return res.status(500).json({ error: 'Failed to log out' });
+    }
+
+    res.clearCookie('connect.sid', { path: '/' });
+    return res.status(200).json({ success: true });
+  });
 });
 
 module.exports = router;

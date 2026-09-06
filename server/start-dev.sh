@@ -1,3 +1,3 @@
 #!/bin/sh
 
-npm i && node app.js
+npm i && npm run dev

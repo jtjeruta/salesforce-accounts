@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const session = require('express-session');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
@@ -25,12 +26,34 @@ app.use(
 
 app.use(express.json());
 
-app.get('/session', (req, res) => {
-  res.status(200).json(req.session);
+if (process.env.NODE_ENV === 'development') {
+  app.use('/session', (req, res) => {
+    res.status(200).json(req.session);
+  });
+}
+
+app.get('/auth/status', (req, res) => {
+  const salesForce = req.session.salesForce || {};
+
+  res.status(200).json({
+    connected: Boolean(salesForce.accessToken && salesForce.instanceUrl),
+    instanceUrl: salesForce.instanceUrl || null,
+  });
+});
+
+app.post('/oauth/logout', (req, res) => {
+  req.session.destroy((error) => {
+    if (error) {
+      return res.status(500).json({ error: 'Failed to log out' });
+    }
+
+    res.clearCookie('connect.sid', { path: '/' });
+    return res.status(200).json({ success: true });
+  });
 });
 
 app.use('/oauth', oauthRoutes);
-app.use('/accounts', accountsRoutes);
+app.use('/api/accounts', accountsRoutes);
 
 if (process.env.NODE_ENV === 'development') {
   app.use('/', createProxyMiddleware({
@@ -40,7 +63,7 @@ if (process.env.NODE_ENV === 'development') {
   }))
 } else {
   app.use(express.static(path.join(__dirname, '../frontend/dist')));
-  app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+  app.get('*', (req, res) => res.sendFile(path.join(__dirname, '../frontend/dist/index.html')));
 }
 
 app.listen(PORT, () => {
