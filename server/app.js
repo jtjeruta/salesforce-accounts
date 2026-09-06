@@ -1,10 +1,12 @@
 const express = require('express');
 const session = require('express-session');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const oauthRoutes = require('./routes/oauth');
 const accountsRoutes = require('./routes/accounts');
 
 const PORT = process.env.PORT || 3000;
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const app = express();
 
 app.use(
@@ -30,9 +32,16 @@ app.get('/session', (req, res) => {
 app.use('/oauth', oauthRoutes);
 app.use('/accounts', accountsRoutes);
 
-app.use((req, res) => {
-  res.status(404).json({ message: 'Not Found' });
-});
+if (process.env.NODE_ENV === 'development') {
+  app.use('/', createProxyMiddleware({
+    target: FRONTEND_URL,
+    ws: true, // Vite HMR
+    changeOrigin: true,
+  }))
+} else {
+  app.use(express.static(path.join(__dirname, '../frontend/dist')));
+  app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+}
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

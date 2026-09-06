@@ -1,17 +1,19 @@
 services:
   frontend:
+    container_name: salesforce-oauth-frontend
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    ports:
-      - ${FRONTEND_PORT}:${FRONTEND_PORT}
     volumes:
       - ./frontend:/app
     environment:
       - NODE_ENV=development
       - PORT=${FRONTEND_PORT}
+    networks:
+      - salesforce-oauth
 
   backend:
+    container_name: salesforce-oauth-backend
     build:
       context: ./server
       dockerfile: Dockerfile
@@ -21,7 +23,16 @@ services:
       - ./server:/app
     environment:
       - NODE_ENV=development
+      - FRONTEND_URL=http://salesforce-oauth-frontend:5173
       - PORT=${SERVER_PORT}
       - CONSUMER_KEY=${SALESFORCE_CONSUMER_KEY}
       - CONSUMER_SECRET=${SALESFORCE_CONSUMER_SECRET}
       - SERVER_URL=${SERVER_URL}
+    depends_on:
+      - frontend
+    networks:
+      - salesforce-oauth
+
+networks:
+  salesforce-oauth:
+    driver: bridge
