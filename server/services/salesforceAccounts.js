@@ -1,4 +1,5 @@
 const { salesforceClient } = require('./salesforce');
+const { appendCreatedAccountRow } = require('./googleSheets');
 
 function formatAccount(account) {
   return {
@@ -26,7 +27,22 @@ module.exports.getAccount = async (session, id) => {
 module.exports.createAccount = async (session, fields) => {
   const api = salesforceClient(session);
   const { data } = await api.post('/sobjects/Account', fields);
-  return formatAccount(data); // { id, success, errors }
+  const result = {
+    id: data.id,
+    success: data.success,
+    errors: data.errors || [],
+  };
+
+  try {
+    await appendCreatedAccountRow({
+      id: result.id,
+      name: fields.Name,
+    });
+  } catch (error) {
+    console.error('Failed to append created account to Google Sheets', error);
+  }
+
+  return result;
 };
 
 module.exports.updateAccount = async (session, id, fields) => {
